@@ -33,22 +33,26 @@
         <form method="POST" action="/api/customer/update-customer" class="col-5">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" name="username" class="form-control" id="username" th:value="${customer.username}">
+                <input type="text" name="username" class="form-control" id="username" th:value="${customer.username}"
+                       th:disabled="${not #authorization.expression('hasAuthority(''USERS_EDIT'')')}">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="text" name="password" class="form-control" id="password" th:value="${customer.password}">
+                <input type="text" name="password" class="form-control" id="password" th:value="${customer.password}"
+                       th:disabled="${not #authorization.expression('hasAuthority(''USERS_EDIT'')')}">
             </div>
-            <input type="hidden" name="id" class="form-control" id="id" th:value="${customer.id}">
+            <input type="hidden" name="id" class="form-control" id="id" th:value="${customer.id}"
+                   th:disabled="${not #authorization.expression('hasAuthority(''USERS_EDIT'')')}">
             <input type="hidden" name="csrfToken" th:value="${CSRF_TOKEN}">
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button sec:authorize="hasAuthority('USERS_EDIT')" type="submit" class="btn btn-primary">Save</button>
         </form>
     </div>
 
     <div class="row">
         <div class="form-group">
             <button type="submit" class="btn btn-danger" id="deleteUser"
-                    th:onclick="'deleteCustomer(\''+ ${customer.id} +'\')'">Delete
+                    th:onclick="'deleteCustomer(\''+ ${customer.id} +'\')'"
+                    sec:authorize="hasAuthority('USERS_DELETE')">Delete
             </button>
         </div>
     </div>
@@ -56,17 +60,21 @@
     <table>
         <tr th:each="address: ${addresses}">
             <form method="POST" action="/api/customer/address/update-address" class="col-5">
-                <td><input name="name" th:value="${address.name}"/>
-                    <input type="hidden" name="id" th:value="${address.id}"/></td>
+                <td><input name="name" th:value="${address.name}"
+                           th:disabled="${not #authorization.expression('hasAuthority(''USERS_EDIT'')')}"/>
+                    <input type="hidden" name="id" th:value="${address.id}"
+                           th:disabled="${not #authorization.expression('hasAuthority(''USERS_EDIT'')')}"/></td>
                 <td>
-                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-primary" sec:authorize="hasAuthority('USERS_EDIT')">Save</button>
                 </td>
             </form>
             <td>
-                <button class="btn btn-danger" th:onclick="'deleteAddress(\''+ ${address.id} +'\')'">Delete</button>
+                <button class="btn btn-danger" th:onclick="'deleteAddress(\''+ ${address.id} +'\')'"
+                        sec:authorize="hasAuthority('USERS_DELETE')">Delete</button>
             </td>
         </tr>
     </table>
+    <div sec:authorize="hasAuthority('USERS_EDIT')">
     <h1>Add new address</h1>
     <table>
         <form method="POST" action="/customer/address" class="col-5">
@@ -74,10 +82,11 @@
                 <td><input name="name"></td>
                 <input type="hidden" name="userId" th:value="${customer.id}"/></td>
                 <td>
-                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-primary" >Save</button>
                 </td>
             </tr>
         </form>
     </table>
+    </div>
 </div>
 </body>

@@ -2,6 +2,7 @@ package com.zuehlke.securesoftwaredevelopment.controller;
 
 import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
 
+import com.zuehlke.securesoftwaredevelopment.config.SecurityUtil;
 import com.zuehlke.securesoftwaredevelopment.domain.Address;
 import com.zuehlke.securesoftwaredevelopment.domain.CustomerUpdate;
 import com.zuehlke.securesoftwaredevelopment.domain.NewAddress;
@@ -10,6 +11,7 @@ import com.zuehlke.securesoftwaredevelopment.repository.CustomerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -31,18 +33,44 @@ public class CustomerController {
 
     @GetMapping("/customers-and-restaurants")
     public String customersAndRestaurants(Model model) {
+        if (SecurityUtil.hasPermission("USERS_LIST_VIEW") && SecurityUtil.hasPermission("RESTAURANT_LIST_VIEW")) {
+            model.addAttribute("customers", customerRepository.getCustomers());
+            model.addAttribute("restaurants", customerRepository.getRestaurants());
+            return "customers-and-restaurants";
+        }
+        else if (SecurityUtil.hasPermission("USERS_LIST_VIEW")) {
+            model.addAttribute("customers", customerRepository.getCustomers());
+            return "customers";
+        }
+        else {
+            model.addAttribute("restaurants", customerRepository.getRestaurants());
+            return "restaurants";
+        }
+    }
+
+    @GetMapping("/customers")
+    @PreAuthorize("hasAuthority('USERS_LIST_VIEW')")
+    public String customers(Model model) {
         model.addAttribute("customers", customerRepository.getCustomers());
+        return "customers";
+    }
+
+    @GetMapping("/restaurants")
+    @PreAuthorize("hasAuthority('RESTAURANT_LIST_VIEW')")
+    public String restaurants(Model model) {
         model.addAttribute("restaurants", customerRepository.getRestaurants());
-        return "customers-and-restaurants";
+        return "restaurants";
     }
 
     @GetMapping("/restaurant")
+    @PreAuthorize("hasAuthority('RESTAURANT_DETAILS_VIEW')")
     public String getRestaurant(@RequestParam(name = "id", required = true) String id, Model model) {
         model.addAttribute("restaurant", customerRepository.getRestaurant(id));
         return "restaurant";
     }
 
     @DeleteMapping("/restaurant")
+    @PreAuthorize("hasAuthority('RESTAURANT_DELETE')")
     public String deleteRestaurant(@RequestParam(name = "id", required = true) String id) {
         int identificator = Integer.valueOf(id);
         customerRepository.deleteRestaurant(identificator);
@@ -50,6 +78,7 @@ public class CustomerController {
     }
 
     @PostMapping("/api/restaurant/update-restaurant")
+    @PreAuthorize("hasAuthority('RESTAURANT_EDIT')")
     public String updateRestaurant(RestaurantUpdate restaurantUpdate, Model model) {
         customerRepository.updateRestaurant(restaurantUpdate);
         customersAndRestaurants(model);
@@ -57,6 +86,7 @@ public class CustomerController {
     }
 
     @GetMapping("/customer")
+    @PreAuthorize("hasAuthority('USERS_DETAILS_VIEW')")
     public String getCustomer(@RequestParam(name = "id", required = true) String id, Model model, HttpSession session) {
         String csrf = session.getAttribute("CSRF_TOKEN").toString();
         model.addAttribute("CSRF_TOKEN", csrf);
@@ -66,12 +96,14 @@ public class CustomerController {
     }
 
     @DeleteMapping("/customer")
+    @PreAuthorize("hasAuthority('USERS_DELETE')")
     public String deleteCustomer(@RequestParam(name = "id", required = true) String id) {
         customerRepository.deleteCustomer(id);
         return "/customers-and-restaurants";
     }
 
     @PostMapping("/api/customer/update-customer")
+    @PreAuthorize("hasAuthority('USERS_EDIT')")
     public String updateCustomer(CustomerUpdate customerUpdate, Model model, HttpSession session, @RequestParam("csrfToken") String csrfToken) throws AccessDeniedException {
         String csrf = session.getAttribute("CSRF_TOKEN").toString();
         if (!csrf.equals(csrfToken)) {
@@ -83,6 +115,7 @@ public class CustomerController {
     }
 
     @DeleteMapping("/customer/address")
+    @PreAuthorize("hasAuthority('USERS_DELETE')")
     public String deleteCustomerAddress(@RequestParam(name = "id", required = true) String id) {
         int identificator = Integer.valueOf(id);
         customerRepository.deleteCustomerAddress(identificator);
@@ -90,6 +123,7 @@ public class CustomerController {
     }
 
     @PostMapping("/api/customer/address/update-address")
+    @PreAuthorize("hasAuthority('USERS_EDIT')")
     public String updateCustomerAddress(Address address, Model model) {
         customerRepository.updateCustomerAddress(address);
         customersAndRestaurants(model);
@@ -97,6 +131,7 @@ public class CustomerController {
     }
 
     @PostMapping("/customer/address")
+    @PreAuthorize("hasAuthority('USERS_EDIT')")
     public String putCustomerAddress(NewAddress newAddress, Model model){
         customerRepository.putCustomerAddress(newAddress);
         customersAndRestaurants(model);

@@ -28,7 +28,7 @@
             <td th:text="${restaurant.name}? 'Delivered' : 'Not delivered'"></td>
             <td th:text="${restaurant.address}"></td>
             <td th:text="${restaurant.restaurantType}"></td>
-            <td><a th:href="@{/restaurant(id=${restaurant.id})}">Details</a></td>
+            <td><a th:href="@{/restaurant(id=${restaurant.id})}" th:hidden="${not #authorization.expression('hasAuthority(''RESTAURANT_DETAILS_VIEW'')')}">Details</a></td>
         </tr>
         </tbody>
     </table>
@@ -45,7 +45,7 @@
         <tr th:each="customer: ${customers}">
             <td th:text="${customer.id}"></td>
             <td th:text="${customer.username}"></td>
-            <td><a th:href="@{/customer(id=${customer.id})}">Details</a></td>
+            <td><a th:href="@{/customer(id=${customer.id})}" th:hidden="${not #authorization.expression('hasAuthority(''USERS_DETAILS_VIEW'')')}">Details</a></td>
         </tr>
         </tbody>
     </table>
