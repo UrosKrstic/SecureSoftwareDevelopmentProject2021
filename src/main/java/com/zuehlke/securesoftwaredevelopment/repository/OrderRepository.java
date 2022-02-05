@@ -4,10 +4,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.*;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +21,12 @@ public class OrderRepository {
 
     public List<Food> getMenu(int id) {
         List<Food> menu = new ArrayList<>();
-        String sqlQuery = "SELECT id, name FROM food WHERE restaurantId=" + id;
+        String sqlQuery = "SELECT id, name FROM food WHERE restaurantId= ?";
         try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery(sqlQuery)) {
+             PreparedStatement statement = connection.prepareStatement(sqlQuery)
+        ) {
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 menu.add(createFood(rs));
             }
@@ -48,15 +47,20 @@ public class OrderRepository {
     public void insertNewOrder(NewOrder newOrder, int userId) {
         LocalDate date = LocalDate.now();
         String sqlQuery = "INSERT INTO delivery (isDone, userId, restaurantId, addressId, date, comment)" +
-                "values (FALSE, " + userId + ", " + newOrder.getRestaurantId() + ", " + newOrder.getAddress() + "," +
-                "'" + date.getYear() + "-" + date.getMonthValue() + "-" + date.getDayOfMonth() + "', '" + newOrder.getComment() + "')";
+                "values (FALSE, ?, ?, ?, ?, ?)";
         try {
             Connection connection = dataSource.getConnection();
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(sqlQuery);
+            PreparedStatement statement = connection.prepareStatement(sqlQuery);
+            statement.setInt(1, userId);
+            statement.setInt(2, newOrder.getRestaurantId());
+            statement.setInt(3, newOrder.getAddress());
+            statement.setDate(4, java.sql.Date.valueOf(date));
+            statement.setString(5, newOrder.getComment());
+            statement.executeUpdate();
 
             sqlQuery = "SELECT MAX(id) FROM delivery";
-            ResultSet rs = statement.executeQuery(sqlQuery);
+            statement = connection.prepareStatement(sqlQuery);
+            ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
 
@@ -69,11 +73,17 @@ public class OrderRepository {
                     if (i > 0) {
                         deliveryItem = ",";
                     }
-                    deliveryItem += "(" + item.getAmount() + ", " + item.getFoodId() + ", " + deliveryId + ")";
+                    deliveryItem += "(?,?,?)";
                     sqlQuery += deliveryItem;
                 }
-                System.out.println(sqlQuery);
-                statement.executeUpdate(sqlQuery);
+                statement = connection.prepareStatement(sqlQuery);
+                for (int i = 0; i < newOrder.getItems().length; i++) {
+                    FoodItem item = newOrder.getItems()[i];
+                    statement.setInt(1 + i * 3, item.getAmount());
+                    statement.setInt(2 + i * 3, item.getFoodId());
+                    statement.setInt(3 + i * 3, deliveryId);
+                }
+                statement.executeUpdate();
             }
 
         } catch (SQLException e) {
@@ -85,10 +95,12 @@ public class OrderRepository {
 
     public Object getAddresses(int userId) {
         List<Address> addresses = new ArrayList<>();
-        String sqlQuery = "SELECT id, name FROM address WHERE userId=" + userId;
+        String sqlQuery = "SELECT id, name FROM address WHERE userId= ?";
         try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery(sqlQuery)) {
+             PreparedStatement statement = connection.prepareStatement(sqlQuery)
+        ) {
+            statement.setInt(1, userId);
+            ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 addresses.add(createAddress(rs));
             }
