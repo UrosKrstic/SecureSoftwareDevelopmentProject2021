@@ -1,7 +1,10 @@
 package com.zuehlke.securesoftwaredevelopment.repository;
 
+import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
 import com.zuehlke.securesoftwaredevelopment.domain.DeliveryDetail;
 import com.zuehlke.securesoftwaredevelopment.domain.ViewableDelivery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -12,6 +15,9 @@ import java.util.List;
 @Repository
 public class DeliveryRepository {
     private DataSource dataSource;
+
+    private static final Logger LOG = LoggerFactory.getLogger(CustomerRepository.class);
+    private static final AuditLogger auditLogger = AuditLogger.getAuditLogger(CustomerRepository.class);
 
     public DeliveryRepository(DataSource dataSource) {
         this.dataSource = dataSource;
@@ -30,7 +36,7 @@ public class DeliveryRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get all deliveries due to SQL Exception", e);
         }
         return deliveries;
     }
@@ -60,7 +66,7 @@ public class DeliveryRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get delivery with id = " + id + ", due to SQL Exception", e);
         }
         return null;
     }
@@ -78,7 +84,7 @@ public class DeliveryRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get delivery details for delivery with id = " + id + ", due to SQL Exception", e);
         }
         return details;
     }
@@ -118,6 +124,9 @@ public class DeliveryRepository {
             while (rs.next()) {
                 cars.add(createDelivery(rs));
             }
+        }
+        catch (SQLException e) {
+            LOG.warn("Failed to search deliveries with search term = " + searchQuery + ", due to SQL Exception", e);
         }
         return cars;
     }

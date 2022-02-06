@@ -1,6 +1,7 @@
 package com.zuehlke.securesoftwaredevelopment.repository;
 
 import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
+import com.zuehlke.securesoftwaredevelopment.config.Entity;
 import com.zuehlke.securesoftwaredevelopment.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class CustomerRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get all users due to SQL Exception", e);
         }
         return customers;
     }
@@ -65,7 +66,7 @@ public class CustomerRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get all restaurants due to SQL Exception", e);
         }
         return restaurants;
     }
@@ -91,30 +92,39 @@ public class CustomerRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get restaurant with id = " + id + " due to SQL Exception", e);
         }
         return null;
     }
 
     public void deleteRestaurant(int id) {
         String query = "DELETE FROM restaurant WHERE id=" + id;
+        Restaurant restaurant = (Restaurant) getRestaurant(String.valueOf(id));
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            auditLogger.audit("Deleted restaurant with id = " + id + "and name = " + restaurant.getName());
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to delete restaurant with id = " + id + " due to SQL Exception", e);
         }
     }
 
     public void updateRestaurant(RestaurantUpdate restaurantUpdate) {
+        Restaurant restaurant = (Restaurant) getRestaurant(String.valueOf(restaurantUpdate.getId()));
         String query = "UPDATE restaurant SET name = '" + restaurantUpdate.getName() + "', address='" + restaurantUpdate.getAddress() + "', typeId =" + restaurantUpdate.getRestaurantType() + " WHERE id =" + restaurantUpdate.getId();
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            String before = String.format("name: %s, address: %s, type: %d",
+                    restaurant.getName(), restaurant.getAddress(), restaurant.getRestaurantType());
+            String after = String.format("name: %s, address: %s, type: %d",
+                    restaurantUpdate.getName(), restaurantUpdate.getAddress(), restaurantUpdate.getRestaurantType());
+            auditLogger.auditChange(new Entity("restaurant.update", String.valueOf(restaurant.getId()), before, after));
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to update restaurant with id = "
+                    + restaurantUpdate.getId() +", name = " + restaurantUpdate.getName() + " due to SQL Exception", e);
         }
 
     }
@@ -130,7 +140,7 @@ public class CustomerRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get user with id = " + id + " due to SQL Exception", e);
         }
         return null;
     }
@@ -144,24 +154,30 @@ public class CustomerRepository {
 
 
     public void deleteCustomer(String id) {
+        Customer customer = getCustomer(String.valueOf(id));
         String query = "DELETE FROM users WHERE id=" + id;
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            auditLogger.audit("Deleted customer with id = " + id + "and username = " + customer.getUsername());
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get delete user with id = " + id + " due to SQL Exception", e);
         }
     }
 
     public void updateCustomer(CustomerUpdate customerUpdate) {
+        Customer customer = getCustomer(String.valueOf(customerUpdate.getId()));
         String query = "UPDATE users SET username = '" + customerUpdate.getUsername() + "', password='" + customerUpdate.getPassword() + "' WHERE id =" + customerUpdate.getId();
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            String before = String.format("username: %s, password: %s", customer.getUsername(), customer.getPassword());
+            String after = String.format("username: %s, password: %s", customerUpdate.getUsername(), customerUpdate.getPassword());
+            auditLogger.auditChange(new Entity("customer.update", String.valueOf(customer.getId()), before, after));
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get update user with id = " + customerUpdate.getId() + " due to SQL Exception", e);
         }
     }
 
@@ -177,7 +193,7 @@ public class CustomerRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get addresses for user with id = " + id + " due to SQL Exception", e);
         }
         return addresses;
     }
@@ -193,9 +209,10 @@ public class CustomerRepository {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            auditLogger.audit("Deleted customer address with id = " + id);
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to delete address with id = " + id + " due to SQL Exception", e);
         }
     }
 
@@ -204,9 +221,10 @@ public class CustomerRepository {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            auditLogger.audit("Updated customer address with new name = " + address.getName());
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to update address with id = " + address.getId() + " due to SQL Exception", e);
         }
     }
 
@@ -215,9 +233,11 @@ public class CustomerRepository {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
+            auditLogger.audit(String.format("Create new customer address with name = %s, userId = %d", newAddress.getName(), newAddress.getUserId()));
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to create address with name = "
+                    + newAddress.getName() + "for user with id = " + newAddress.getUserId() + " due to SQL Exception", e);
         }
     }
 }
