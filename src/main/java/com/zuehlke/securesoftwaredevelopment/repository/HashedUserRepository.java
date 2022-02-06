@@ -13,7 +13,6 @@ public class HashedUserRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(HashedUserRepository.class);
 
-
     private final DataSource dataSource;
 
     public HashedUserRepository(DataSource dataSource) {
@@ -32,7 +31,7 @@ public class HashedUserRepository {
                 return new HashedUser(username, passwordHash, salt, totpKey);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to find user with username = " + username + ", due to SQL Exception", e);
         }
         return null;
     }
@@ -46,7 +45,7 @@ public class HashedUserRepository {
 
             statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to save to tp key for user with username = " + username + ", due to SQL Exception", e);
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.zuehlke.securesoftwaredevelopment.repository;
 
+import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
 import com.zuehlke.securesoftwaredevelopment.domain.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -13,6 +16,8 @@ import java.util.List;
 public class OrderRepository {
 
     private DataSource dataSource;
+    private static final Logger LOG = LoggerFactory.getLogger(OrderRepository.class);
+    private static final AuditLogger auditLogger = AuditLogger.getAuditLogger(OrderRepository.class);
 
     public OrderRepository(DataSource dataSource) {
         this.dataSource = dataSource;
@@ -32,7 +37,7 @@ public class OrderRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+             LOG.warn("Failed to get menu with id = " + id + ", due to SQL Exception", e);
         }
 
         return menu;
@@ -65,10 +70,13 @@ public class OrderRepository {
             if (rs.next()) {
 
                 int deliveryId = rs.getInt(1);
+
+                auditLogger.audit(String.format("Created new order: deliveryId = %d, userId = %d, restaurantId = %d, addressId = %d, date = %s",
+                        deliveryId, userId,newOrder.getRestaurantId(), newOrder.getAddress(), date.toString()));
+
                 sqlQuery = "INSERT INTO delivery_item (amount, foodId, deliveryId)" +
                         "values";
                 for (int i = 0; i < newOrder.getItems().length; i++) {
-                    FoodItem item = newOrder.getItems()[i];
                     String deliveryItem = "";
                     if (i > 0) {
                         deliveryItem = ",";
@@ -82,12 +90,14 @@ public class OrderRepository {
                     statement.setInt(1 + i * 3, item.getAmount());
                     statement.setInt(2 + i * 3, item.getFoodId());
                     statement.setInt(3 + i * 3, deliveryId);
+                    auditLogger.audit(String.format("With item: amount = %d, foodId = %d, deliveryId = %d",
+                            item.getAmount(), item.getFoodId(), deliveryId));
                 }
                 statement.executeUpdate();
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to create new order due to SQL Exception", e);
         }
 
 
@@ -106,7 +116,7 @@ public class OrderRepository {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to get address with userId = " + userId + ", due to SQL Exception", e);
         }
         return addresses;
     }

@@ -2,6 +2,7 @@ package com.zuehlke.securesoftwaredevelopment.config;
 
 import com.zuehlke.securesoftwaredevelopment.domain.Permission;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
+import com.zuehlke.securesoftwaredevelopment.repository.CustomerRepository;
 import com.zuehlke.securesoftwaredevelopment.repository.UserRepository;
 import com.zuehlke.securesoftwaredevelopment.service.PermissionService;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -22,6 +23,7 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider {
 
     private final UserRepository userRepository;
     private final PermissionService permissionService;
+    private static final AuditLogger auditLogger = AuditLogger.getAuditLogger(DatabaseAuthenticationProvider.class);
 
     private static final String PASSWORD_WRONG_MESSAGE = "Authentication failed for username='%s',password='%s'";
 
@@ -42,9 +44,11 @@ public class DatabaseAuthenticationProvider implements AuthenticationProvider {
         if (success) {
             User user = userRepository.findUser(username);
             List<GrantedAuthority> grantedAuthorities = getGrantedAuthorities(user);
+            auditLogger.audit("Successful login by user: username = " + username);
             return new UsernamePasswordAuthenticationToken(user, password, grantedAuthorities);
         }
 
+        auditLogger.audit("Unsuccessful login by user: username = " + username);
         throw new BadCredentialsException(String.format(PASSWORD_WRONG_MESSAGE, username, password));
     }
 

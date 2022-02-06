@@ -16,8 +16,7 @@ import java.util.List;
 public class DeliveryRepository {
     private DataSource dataSource;
 
-    private static final Logger LOG = LoggerFactory.getLogger(CustomerRepository.class);
-    private static final AuditLogger auditLogger = AuditLogger.getAuditLogger(CustomerRepository.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeliveryRepository.class);
 
     public DeliveryRepository(DataSource dataSource) {
         this.dataSource = dataSource;

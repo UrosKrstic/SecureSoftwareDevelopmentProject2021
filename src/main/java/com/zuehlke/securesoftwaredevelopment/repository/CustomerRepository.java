@@ -116,7 +116,7 @@ public class CustomerRepository {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
-            String before = String.format("name: %s, address: %s, type: %d",
+            String before = String.format("name: %s, address: %s, type: %s",
                     restaurant.getName(), restaurant.getAddress(), restaurant.getRestaurantType());
             String after = String.format("name: %s, address: %s, type: %d",
                     restaurantUpdate.getName(), restaurantUpdate.getAddress(), restaurantUpdate.getRestaurantType());
@@ -233,7 +233,7 @@ public class CustomerRepository {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()
         ) {
-            auditLogger.audit(String.format("Create new customer address with name = %s, userId = %d", newAddress.getName(), newAddress.getUserId()));
+            auditLogger.audit(String.format("Created new customer address with name = %s, userId = %d", newAddress.getName(), newAddress.getUserId()));
             statement.executeUpdate(query);
         } catch (SQLException e) {
             LOG.warn("Failed to create address with name = "

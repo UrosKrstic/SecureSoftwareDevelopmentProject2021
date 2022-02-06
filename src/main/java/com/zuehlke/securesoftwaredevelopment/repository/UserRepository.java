@@ -1,5 +1,7 @@
 package com.zuehlke.securesoftwaredevelopment.repository;
 
+import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
+import com.zuehlke.securesoftwaredevelopment.config.SecurityUtil;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,7 @@ import java.sql.Statement;
 public class UserRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserRepository.class);
+    private static final AuditLogger auditLogger = AuditLogger.getAuditLogger(UserRepository.class);
 
     private DataSource dataSource;
 
@@ -34,7 +37,7 @@ public class UserRepository {
                 return new User(id, username1, password);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to find user with username = " + username + ", due to SQL Exception", e);
         }
         return null;
     }
@@ -46,19 +49,23 @@ public class UserRepository {
              ResultSet rs = statement.executeQuery(query)) {
             return rs.next();
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to validate user with username = " + username + ", due to SQL Exception", e);
         }
         return false;
     }
 
     public void delete(int userId) {
         String query = "DELETE FROM users WHERE id = " + userId;
+        User currentUser = SecurityUtil.getCurrentUser();
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
         ) {
+
+            auditLogger.audit("Deleted user with userId = " + userId + ", username = " + currentUser.getUsername());
             statement.executeUpdate(query);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.warn("Failed to delete user with userId = " + userId +
+                    ", username = " + currentUser.getUsername() +", due to SQL Exception", e);
         }
     }
 }
